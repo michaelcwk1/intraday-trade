@@ -1,0 +1,32 @@
+# Environment variables & secrets (PENTING: Jangan di-upload ke GitHub)
+.env
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Log files & scratch data
+*.log
+scratch/
+charts/*.png
+scan_results.json
+alerts.json
+portfolio.json
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Data lokal (setting pribadi, cache, log). Daftar rekomendasi (data/picks/) ikut di-commit
+# oleh GitHub Actions supaya bisa dibaca web di Vercel.
+data/*
+!data/picks/

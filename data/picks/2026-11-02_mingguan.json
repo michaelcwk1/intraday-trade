@@ -1,0 +1,68 @@
+{
+ "kind": "mingguan",
+ "generated_at": "2026-11-01 17:56",
+ "data_date": "2026-10-30",
+ "valid_for": "2026-11-02",
+ "sell_on": "2026-11-06",
+ "scanned": 132,
+ "mingguan": [
+  {
+   "symbol": "PWON",
+   "kind": "mingguan",
+   "score": 87.6,
+   "grade": "A",
+   "close": 282.0,
+   "change_pct": -1.4,
+   "entry_low": 276,
+   "entry_high": 282,
+   "sl": 266,
+   "sl_pct": -5.7,
+   "tp1": 298,
+   "tp1_pct": 5.7,
+   "tp2": 314,
+   "tp2_pct": 11.3,
+   "rvol": 0.63,
+   "atr_pct": 5.1,
+   "turnover_avg": 19535249680,
+   "reasons": [
+    "Tren naik: harga > MA20 > MA50, MA20 menanjak",
+    "Dekat MA20, area beli yang wajar",
+    "Uang masuk lebih besar dari uang keluar (CMF positif)"
+   ],
+   "lots": 17,
+   "affordable": true,
+   "cost": 480119,
+   "risk_rp": 29118,
+   "risk_over_budget": false
+  },
+  {
+   "symbol": "INTP",
+   "kind": "mingguan",
+   "score": 77.0,
+   "grade": "A",
+   "close": 5575.0,
+   "change_pct": 1.36,
+   "entry_low": 5425,
+   "entry_high": 5575,
+   "sl": 5275,
+   "sl_pct": -5.4,
+   "tp1": 5875,
+   "tp1_pct": 5.4,
+   "tp2": 6175,
+   "tp2_pct": 10.8,
+   "rvol": 0.39,
+   "atr_pct": 5.4,
+   "turnover_avg": 11496251675,
+   "reasons": [
+    "Tren naik: harga > MA20 > MA50, MA20 menanjak",
+    "Uang masuk lebih besar dari uang keluar (CMF positif)",
+    "RSI 59: momentum sehat, belum jenuh beli"
+   ],
+   "lots": 1,
+   "affordable": true,
+   "cost": 558336,
+   "risk_rp": 32230,
+   "risk_over_budget": true
+  }
+ ]
+}

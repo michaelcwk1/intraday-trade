@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScalpTrade — Rekomendasi Hari Ini</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    // Terapkan tema sebelum render agar tidak berkedip
+    (function () {
+      const saved = localStorage.getItem('theme');
+      const theme = saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.dataset.theme = theme;
+    })();
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: {
+            bg: 'rgb(var(--bg) / <alpha-value>)', panel: 'rgb(var(--panel) / <alpha-value>)',
+            line: 'rgb(var(--line) / <alpha-value>)', hover: 'rgb(var(--hover) / <alpha-value>)',
+            ink: 'rgb(var(--ink) / <alpha-value>)', mute: 'rgb(var(--mute) / <alpha-value>)',
+            faint: 'rgb(var(--faint) / <alpha-value>)', accent: 'rgb(var(--accent) / <alpha-value>)',
+            up: 'rgb(var(--up) / <alpha-value>)', down: 'rgb(var(--down) / <alpha-value>)',
+            warn: 'rgb(var(--warn) / <alpha-value>)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root, [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: 14 16 19; --panel: 21 24 29; --line: 35 39 46; --hover: 27 31 37;
+      --ink: 230 232 235; --mute: 139 146 156; --faint: 93 99 108;
+      --accent: 91 141 239; --up: 47 182 124; --down: 229 72 77; --warn: 217 164 65;
+      --scroll: 43 48 56;
+    }
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: 246 247 249; --panel: 255 255 255; --line: 223 226 231; --hover: 238 240 243;
+      --ink: 21 24 29; --mute: 92 100 111; --faint: 140 147 157;
+      --accent: 47 103 214; --up: 22 145 96; --down: 207 49 56; --warn: 176 124 24;
+      --scroll: 200 205 212;
+    }
+    body { background: rgb(var(--bg)); color: rgb(var(--ink)); font-family: 'Inter', sans-serif; }
+    .num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    table { border-collapse: collapse; }
+    th { font-weight: 500; color: rgb(var(--mute)); text-align: left; white-space: nowrap; }
+    td, th { padding: 8px 10px; }
+    td.num { white-space: nowrap; }
+    @media (max-width: 640px) { td, th { padding: 7px 6px; } }
+    tbody tr { border-top: 1px solid rgb(var(--line)); }
+    .nav-link[aria-current="page"] { color: rgb(var(--ink)); border-color: rgb(var(--accent)); }
+    .seg button[aria-pressed="true"] { background: rgb(var(--line)); color: rgb(var(--ink)); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgb(var(--scroll)); border-radius: 4px; }
+    input { background: rgb(var(--bg)); border: 1px solid rgb(var(--line)); border-radius: 6px; padding: 6px 8px; color: rgb(var(--ink)); }
+    input:focus { outline: none; border-color: rgb(var(--accent)); }
+    [data-theme="light"] dialog::backdrop { background: rgb(15 18 22 / 0.35); }
+    .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 999px;
+      border: 1px solid rgb(var(--line)); color: rgb(var(--mute)); font: italic 600 11px/1 Georgia, serif; }
+    .info-btn:hover { color: rgb(var(--accent)); border-color: rgb(var(--accent)); }
+    .guide table { width: 100%; font-size: 12px; }
+    .tag-buy { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+      color: rgb(var(--accent)); background: rgb(var(--accent) / 0.12); }
+    .guide td, .guide th { padding: 6px 8px; vertical-align: top; }
+    .guide h3 { font-weight: 600; margin: 16px 0 6px; }
+    [data-theme="dark"] .theme-sun, [data-theme="light"] .theme-moon { display: none; }
+  </style>
+</head>
+<body class="min-h-screen text-sm overflow-x-hidden">
+
+<header class="border-b border-line bg-bg sm:sticky top-0 z-30">
+  <div class="max-w-6xl mx-auto px-4 flex flex-wrap items-center gap-x-6 gap-y-2 py-2">
+    <a href="#hari-ini" class="font-semibold tracking-tight text-ink">ScalpTrade</a>
+    <nav class="flex gap-1 overflow-x-auto -mb-2" id="nav">
+      <a href="#hari-ini" data-page="hari-ini" class="nav-link px-3 py-2 border-b-2 border-transparent text-mute hover:text-ink whitespace-nowrap">Hari Ini</a>
+      <a href="#saham" data-page="saham" class="nav-link px-3 py-2 border-b-2 border-transparent text-mute hover:text-ink whitespace-nowrap">Saham</a>
+      <a href="#forex" data-page="forex" class="nav-link px-3 py-2 border-b-2 border-transparent text-mute hover:text-ink whitespace-nowrap">Forex</a>
+      <a href="#rekam" data-page="rekam" class="nav-link px-3 py-2 border-b-2 border-transparent text-mute hover:text-ink whitespace-nowrap">Rekam Jejak</a>
+      <a href="#alat" data-page="alat" class="nav-link px-3 py-2 border-b-2 border-transparent text-mute hover:text-ink whitespace-nowrap">Alat</a>
+    </nav>
+    <div class="ml-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-mute" id="status-bar">
+      <span>BEI: <span id="st-idx" class="text-ink">–</span></span>
+      <span>Forex: <span id="st-fx" class="text-ink">–</span></span>
+      <span id="st-clock" class="num">–</span>
+      <button id="theme-toggle" onclick="toggleTheme()" class="border border-line rounded-md p-1.5 text-mute hover:text-ink" aria-label="Ganti tema terang/gelap" title="Ganti tema terang/gelap">
+        <svg class="theme-sun w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="theme-moon w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- ============================ HARI INI ============================ -->
+  <section data-view="hari-ini" hidden>
+    <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+      <div>
+        <h1 class="text-xl font-semibold" id="today-title">Rekomendasi</h1>
+        <p class="text-mute mt-1" id="today-sub">Memuat…</p>
+      </div>
+      <button onclick="openSettings()" class="text-xs text-mute hover:text-ink border border-line rounded-md px-3 py-1.5">
+        Harian <span class="num text-ink" id="cap-daily">–</span> · Mingguan <span class="num text-ink" id="cap-weekly">–</span> · Forex <span class="num text-ink" id="cap-fx">–</span> · Ubah
+      </button>
+    </div>
+
+    <div id="today-update" class="mb-5"></div>
+
+    <div class="bg-panel border border-line rounded-lg p-4 mb-5">
+      <h2 class="font-semibold mb-3">Jadwal <span class="text-mute font-normal" id="today-plan-day"></span></h2>
+      <ol id="today-plan" class="space-y-2.5"></ol>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-5">
+      <div class="bg-panel border border-line rounded-lg flex flex-col min-w-0">
+        <div class="flex items-start justify-between px-4 pt-4 pb-2 gap-2">
+          <div>
+            <h2 class="font-semibold flex items-center gap-2">Harian <span class="text-mute font-normal">· beli buka, jual sore</span><button type="button" onclick="openInfo('saham')" class="info-btn" aria-label="Cara membaca tabel saham" title="Cara membaca tabel saham">i</button></h2>
+            <p class="text-xs text-mute mt-0.5" id="today-harian-meta"></p>
+          </div>
+          <a href="#saham" onclick="state.kind='harian'" class="text-xs text-accent whitespace-nowrap">Lihat 10 →</a>
+        </div>
+        <div id="today-harian" class="overflow-x-auto"></div>
+        <div id="today-harian-plan" class="mt-auto"></div>
+      </div>
+      <div class="bg-panel border border-line rounded-lg flex flex-col min-w-0">
+        <div class="flex items-start justify-between px-4 pt-4 pb-2 gap-2">
+          <div>
+            <h2 class="font-semibold flex items-center gap-2">Mingguan <span class="text-mute font-normal">· beli Senin, jual Jumat</span><button type="button" onclick="openInfo('saham')" class="info-btn" aria-label="Cara membaca tabel saham" title="Cara membaca tabel saham">i</button></h2>
+            <p class="text-xs text-mute mt-0.5" id="today-mingguan-meta"></p>
+          </div>
+          <a href="#saham" onclick="state.kind='mingguan'" class="text-xs text-accent whitespace-nowrap">Lihat 10 →</a>
+        </div>
+        <div id="today-mingguan" class="overflow-x-auto"></div>
+        <div id="today-mingguan-plan" class="mt-auto"></div>
+      </div>
+    </div>
+
+    <div class="mt-5 bg-panel border border-line rounded-lg">
+      <div class="flex items-center justify-between px-4 pt-4 pb-2">
+        <h2 class="font-semibold flex items-center gap-2">Forex <span class="text-mute font-normal">· intraday M15/H1</span><button type="button" onclick="openInfo('forex')" class="info-btn" aria-label="Cara membaca sinyal forex" title="Cara membaca sinyal forex">i</button></h2>
+        <a href="#forex" class="text-xs text-accent">Detail →</a>
+      </div>
+      <div id="today-fx" class="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-line"></div>
+    </div>
+
+    <p class="text-xs text-faint mt-6">Alat bantu keputusan, bukan jaminan profit. Data saham dari Yahoo Finance terlambat ±15 menit. Harga emas memakai futures GC=F; samakan dengan Exness di halaman Forex.</p>
+  </section>
+
+  <!-- ============================ SAHAM ============================ -->
+  <section data-view="saham" hidden>
+    <div class="flex flex-wrap items-center gap-3 mb-4">
+      <div class="seg inline-flex border border-line rounded-md p-0.5 text-xs text-mute" id="seg-kind">
+        <button data-v="harian" class="px-3 py-1.5 rounded">Harian · beli buka, jual sore</button>
+        <button data-v="mingguan" class="px-3 py-1.5 rounded">Mingguan · Senin–Jumat</button>
+      </div>
+      <button onclick="loadPicks(state.kind, true)" class="ml-auto text-xs text-mute hover:text-ink border border-line rounded-md px-3 py-1.5">Scan ulang</button>
+    </div>
+    <p class="text-mute text-xs mb-3" id="picks-meta"></p>
+    <div class="bg-panel border border-line rounded-lg overflow-x-auto" id="picks-table"></div>
+    <div id="pick-detail" class="mt-5" hidden></div>
+    <details class="mt-6 text-xs text-mute">
+      <summary class="cursor-pointer hover:text-ink">Cara membaca & aturan seleksi</summary>
+      <div class="mt-2 space-y-1 leading-relaxed max-w-3xl">
+        <p><b class="text-ink">Harian</b> (beli saat buka, jual sore): rata-rata transaksi ≥ Rp 15 M/hari supaya mudah dijual sore, volatilitas (ATR) 2–7%, kemarin ditutup naik dan di separuh atas range harian, harga di atas MA5 & MA10. Skor dari lonjakan volume, kekuatan close, aliran dana (CMF), dan tren pendek. SL 0,6 ATR (maks. −3%), TP1 = 1× risiko. Daftar dibuat tiap hari bursa 16:30 WIB untuk hari bursa berikutnya.</p>
+        <p><b class="text-ink">Mingguan</b> (beli Senin, jual Jumat): harga > MA20 > MA50, MA20 menanjak, RSI 50–72, maksimal 8% di atas MA20. Skor tertinggi untuk tren rapi yang dekat MA20 dengan aliran dana masuk. SL di bawah swing low 10 hari (±−5%), TP1 = 1× risiko. Daftar dibuat tiap Jumat 16:30 WIB untuk minggu berikutnya.</p>
+        <p><b class="text-ink">Lot</b>: modal tiap jenis dibagi jumlah posisi, lalu dibatasi risiko per posisi (default 2% modal jenisnya). Saham yang 1 lot-nya melebihi alokasi tidak ditampilkan. Biaya beli 0,15% dan jual 0,25% sudah dihitung.</p>
+        <p><b class="text-ink">Grade</b>: A ≥ 70, B ≥ 55, C di bawahnya. Yang ditandai <b class="text-accent">Beli</b> = grade A/B teratas sebanyak jumlah posisi; sisanya cadangan. Grade C tidak pernah ditandai Beli.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============================ FOREX ============================ -->
+  <section data-view="forex" hidden>
+    <div class="mb-4">
+      <h1 class="text-xl font-semibold">Forex · Exness cent</h1>
+      <p class="text-mute mt-1" id="fx-meta">Memuat…</p>
+    </div>
+    <div class="flex flex-wrap items-end gap-x-8 gap-y-3 mb-5 bg-panel border border-line rounded-lg px-4 py-3">
+      <form class="flex flex-wrap items-end gap-3 text-xs" onsubmit="saveFxSettings(event)">
+        <label class="flex flex-col gap-1 text-mute">Saldo (Rp)<input id="in-fx-bal" type="number" class="num w-32"></label>
+        <label class="flex flex-col gap-1 text-mute">Risiko/entry (%)<input id="in-fx-risk" type="number" step="0.1" class="num w-20"></label>
+        <button class="border border-line rounded-md px-3 py-1.5 text-ink hover:bg-hover">Simpan</button>
+      </form>
+      <form class="flex items-end gap-2 text-xs" onsubmit="saveOffset(event)">
+        <label class="flex flex-col gap-1 text-mute">Harga XAU di Exness sekarang<input id="in-xau" type="number" step="0.01" class="num w-32" placeholder="mis. 3885.40"></label>
+        <button class="border border-line rounded-md px-3 py-1.5 text-ink hover:bg-hover">Samakan</button>
+        <span class="text-faint self-center max-w-[260px]">Yahoo memakai harga futures; isi harga bid Exness agar level sesuai chart MT5.</span>
+      </form>
+    </div>
+    <div id="fx-cards" class="grid lg:grid-cols-3 gap-5"></div>
+    <div class="mt-5 bg-panel border border-line rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold" id="fx-chart-title">Chart M15</h2>
+        <span class="text-xs text-mute">Garis: entry (biru), SL (merah), TP (hijau)</span>
+      </div>
+      <div id="fx-chart" class="h-[380px]"></div>
+    </div>
+    <details class="mt-6 text-xs text-mute">
+      <summary class="cursor-pointer hover:text-ink">Cara kerja sinyal & hitungan lot</summary>
+      <div class="mt-2 space-y-1 leading-relaxed max-w-3xl">
+        <p><b class="text-ink">Grade A</b>: tren H1 jelas + trigger M15 muncul + jam London/New York. <b class="text-ink">B</b>: tren & trigger ada tapi di luar jam ramai. <b class="text-ink">Tunggu</b>: tren ada, trigger belum; pasang limit di area yang ditunjukkan atau tunggu. <b class="text-ink">Hindari</b>: H1 sideways.</p>
+        <p>SL di balik swing terakhir ± 0,5 ATR M15. TP1 = 1× risiko (tutup separuh, geser SL ke entry), TP2 = 2× risiko.</p>
+        <p>Lot cent = risiko (USC) ÷ (jarak SL × ukuran kontrak). Asumsi kontrak: XAUUSD 100 oz (gerak $1 = 100 USC per lot), EURUSD/GBPUSD 100.000 (1 pip = 10 USC per lot). Cek di MT5 → klik kanan simbol → Specification; jika berbeda, ubah di Pengaturan.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============================ REKAM JEJAK ============================ -->
+  <section data-view="rekam" hidden>
+    <h1 class="text-xl font-semibold">Rekam Jejak</h1>
+    <p class="text-mute mt-1 mb-5">Hasil rekomendasi lama: kena TP1 atau SL lebih dulu. Jika keduanya tersentuh di candle yang sama, dihitung SL.</p>
+    <div id="tr-summary" class="grid md:grid-cols-3 gap-5"></div>
+    <div class="mt-5 bg-panel border border-line rounded-lg overflow-x-auto" id="tr-rows"></div>
+  </section>
+
+  <!-- ============================ ALAT ============================ -->
+  <section data-view="alat" hidden>
+    <div class="flex flex-wrap gap-1 mb-5 text-xs" id="tool-nav">
+      <button data-tool="bandar" class="px-3 py-1.5 rounded-md border border-line text-mute hover:text-ink">Akumulasi</button>
+      <button data-tool="breakout" class="px-3 py-1.5 rounded-md border border-line text-mute hover:text-ink">Breakout volume</button>
+      <button data-tool="sektor" class="px-3 py-1.5 rounded-md border border-line text-mute hover:text-ink">Sektor</button>
+      <button data-tool="swing" class="px-3 py-1.5 rounded-md border border-line text-mute hover:text-ink">Buy on weakness</button>
+      <button data-tool="chart" class="px-3 py-1.5 rounded-md border border-line text-mute hover:text-ink">Chart</button>
+      <button data-tool="crypto" class="px-3 py-1.5 rounded-md border border-line text-mute hover:text-ink">Crypto</button>
+      <button data-tool="paper" class="px-3 py-1.5 rounded-md border border-line text-mute hover:text-ink">Paper trading</button>
+      <button data-tool="alerts" class="px-3 py-1.5 rounded-md border border-line text-mute hover:text-ink">Alarm harga</button>
+    </div>
+    <div id="tool-body"></div>
+  </section>
+</main>
+
+<!-- ============================ PANDUAN (tombol i) ============================ -->
+<dialog id="info" class="bg-panel text-ink border border-line rounded-lg p-0 w-[min(680px,94vw)] max-h-[88vh] backdrop:bg-black/60">
+  <div class="sticky top-0 bg-panel border-b border-line px-5 py-3 flex items-center justify-between">
+    <h2 class="font-semibold" id="info-title">Panduan</h2>
+    <button type="button" onclick="infoDlg.close()" class="text-mute hover:text-ink text-lg leading-none px-1" aria-label="Tutup">×</button>
+  </div>
+  <div class="guide px-5 pb-5 text-sm leading-relaxed" id="info-body"></div>
+</dialog>
+
+<!-- ============================ PENGATURAN ============================ -->
+<dialog id="settings" class="bg-panel text-ink border border-line rounded-lg p-0 w-[min(440px,92vw)] backdrop:bg-black/60">
+  <form method="dialog" class="p-5 space-y-4" onsubmit="saveSettings(event)">
+    <h2 class="font-semibold">Pengaturan modal</h2>
+    <div class="grid grid-cols-2 gap-3 text-xs">
+      <label class="flex flex-col gap-1 text-mute">Modal harian (Rp)<input name="daily_capital" type="number" class="num"></label>
+      <label class="flex flex-col gap-1 text-mute">Modal mingguan (Rp)<input name="weekly_capital" type="number" class="num"></label>
+      <label class="flex flex-col gap-1 text-mute">Saham dibeli per hari<input name="daily_positions" type="number" min="1" class="num"></label>
+      <label class="flex flex-col gap-1 text-mute">Saham dibeli per minggu<input name="weekly_positions" type="number" min="1" class="num"></label>
+      <label class="flex flex-col gap-1 text-mute">Risiko per posisi (%)<input name="stock_risk_pct" type="number" step="0.1" class="num"></label>
+      <span></span>
+      <label class="flex flex-col gap-1 text-mute">Saldo forex (Rp)<input name="fx_balance_idr" type="number" class="num"></label>
+      <label class="flex flex-col gap-1 text-mute">Risiko per entry (%)<input name="fx_risk_pct" type="number" step="0.1" class="num"></label>
+      <label class="flex flex-col gap-1 text-mute">Kontrak XAU per lot<input name="xau_contract_size" type="number" class="num"></label>
+      <label class="flex flex-col gap-1 text-mute">Kontrak FX per lot<input name="fx_contract_size" type="number" class="num"></label>
+    </div>
+    <div class="flex justify-end gap-2 text-xs">
+      <button type="button" onclick="settingsDlg.close()" class="px-3 py-1.5 rounded-md text-mute hover:text-ink">Batal</button>
+      <button class="px-3 py-1.5 rounded-md bg-accent text-white">Simpan</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+// ------------------------------------------------------------------ utils
+const $ = (s) => document.querySelector(s);
+const state = { kind: 'harian', picks: {}, fx: null, settings: null, tool: 'bandar', fxChartSym: 'XAUUSD' };
+const settingsDlg = $('#settings');
+const infoDlg = $('#info');
+infoDlg.addEventListener('click', (e) => { if (e.target === infoDlg) infoDlg.close(); });
+
+// Isi panduan untuk tombol "i"
+const GUIDES = {
+  saham: {
+    title: 'Cara pakai rekomendasi saham',
+    body: () => `
+      <h3>Modal dibagi dua</h3>
+      <table><tbody>
+        <tr><td class="font-medium whitespace-nowrap">Harian</td><td class="text-mute">Beli saat bursa buka, <b class="text-ink">jual di hari yang sama</b> paling lambat 15:45 WIB. Daftar baru setiap hari bursa.</td></tr>
+        <tr><td class="font-medium whitespace-nowrap">Mingguan</td><td class="text-mute">Beli <b class="text-ink">Senin</b>, jual <b class="text-ink">Jumat</b> paling lambat 15:45 WIB. Daftar baru setiap Jumat sore.</td></tr>
+      </tbody></table>
+      <p class="text-xs text-faint mt-1">Besar modal dan jumlah saham per jenis bisa diubah lewat tombol "Ubah" di kanan atas.</p>
+      <h3>Jadwal harian kamu</h3>
+      <table><tbody>
+        <tr><td class="num font-medium whitespace-nowrap">16:30</td><td class="text-mute">Bursa sudah tutup. Daftar untuk <b class="text-ink">besok</b> terbit otomatis di halaman ini. Lihat bagian Jadwal.</td></tr>
+        <tr><td class="num font-medium whitespace-nowrap">08:45–08:58</td><td class="text-mute">Pra-pembukaan. Pasang antrean beli untuk saham bertanda <b class="text-accent">Beli</b>, di harga Entry (jangan lebih tinggi).</td></tr>
+        <tr><td class="num font-medium whitespace-nowrap">09:00</td><td class="text-mute">Bursa buka. Setelah terbeli, pasang <b class="text-down">SL</b> dan <b class="text-up">TP1</b> (fitur auto order di aplikasi sekuritas).</td></tr>
+        <tr><td class="num font-medium whitespace-nowrap">15:45</td><td class="text-mute">Jual semua saham Harian yang belum kena TP/SL. Hari Jumat: jual juga saham Mingguan.</td></tr>
+      </tbody></table>
+      <h3>Arti kolom</h3>
+      <table><tbody>
+        <tr><td>${gradeBadge('A')} ${gradeBadge('B')} ${gradeBadge('C')}</td><td class="text-mute">Kualitas setup dari skor 0–100. A ≥ 70 (paling kuat), B ≥ 55, C di bawahnya. Ini skor peringkat, bukan peluang naik.</td></tr>
+        <tr><td class="font-medium">Entry</td><td class="text-mute">Rentang harga beli. Kalau harga buka sudah di atasnya, jangan kejar.</td></tr>
+        <tr><td class="font-medium text-down">SL</td><td class="text-mute">Stop loss. Jual kalau harga turun ke sini, supaya rugi tetap kecil.</td></tr>
+        <tr><td class="font-medium text-up">TP1</td><td class="text-mute">Target untung. Jual di sini.</td></tr>
+        <tr><td class="font-medium">Lot</td><td class="text-mute">Jumlah lot yang dibeli (1 lot = 100 lembar). Sudah disesuaikan dengan modal dan batas risiko.</td></tr>
+        <tr><td class="font-medium">Biaya</td><td class="text-mute">Uang yang dipakai untuk membeli, sudah termasuk fee beli.</td></tr>
+        <tr><td><span class="tag-buy">Beli</span></td><td class="text-mute">Saham yang dibeli. Sisanya <span class="text-faint">cadangan</span>: pakai jika saham utama dibuka gap naik terlalu tinggi.</td></tr>
+      </tbody></table>
+      <p class="text-xs text-faint mt-4">Data dari Yahoo Finance, terlambat ±15 menit. Server harus menyala pukul 16:30 supaya daftar terbit otomatis; kalau tidak, daftar dibuat saat web dibuka. Alat bantu keputusan, bukan jaminan profit.</p>`,
+  },
+  forex: {
+    title: 'Cara membaca sinyal forex',
+    body: () => `
+      <h3>Langkah singkat</h3>
+      <ol class="list-decimal pl-5 space-y-1 text-mute">
+        <li>Baca <b class="text-ink">tulisan berwarna</b>: itu yang harus kamu lakukan.</li>
+        <li>Lihat <b class="text-ink">jam WIB</b> di bawahnya: kapan harus eksekusi atau cek lagi.</li>
+        <li>Masukkan <b class="text-ink">Entry, SL, TP, dan lot</b> ke MT5. Kalau ada label <span class="text-faint">Rencana</span>, belum boleh entry.</li>
+      </ol>
+      <h3>Arti setiap status</h3>
+      <table>
+        <thead><tr class="text-xs"><th>Tulisan di kartu</th><th>Artinya</th><th>Jam yang ditampilkan</th></tr></thead>
+        <tbody>
+          <tr><td class="text-up font-semibold whitespace-nowrap">BUY/SELL sekarang</td><td class="text-mute">Grade A/B. Trigger sudah muncul, entry dengan order market.</td><td class="text-mute"><b class="text-ink">Paling lambat</b>: saat candle M15 ini tutup. Lewat dari itu, sinyal dihitung ulang.</td></tr>
+          <tr><td class="text-accent font-semibold whitespace-nowrap">Pasang BUY/SELL LIMIT</td><td class="text-mute">Trigger belum muncul. Pasang order limit di harga Entry.</td><td class="text-mute"><b class="text-ink">Batalkan jika belum kena</b>: sekitar 1 jam setelah dipasang.</td></tr>
+          <tr><td class="text-warn font-semibold">Tunggu konfirmasi M15</td><td class="text-mute">Harga sudah lewat area entry. Jangan kejar.</td><td class="text-mute"><b class="text-ink">Cek pukul</b>: candle M15 berikutnya tutup (:00, :15, :30, :45).</td></tr>
+          <tr><td class="text-warn font-semibold">Tunggu jam London</td><td class="text-mute">Di luar jam ramai. Gerak lambat, spread lebar.</td><td class="text-mute"><b class="text-ink">Cek pukul 14:00 WIB</b>.</td></tr>
+          <tr><td class="text-warn font-semibold">Pasar tutup</td><td class="text-mute">Akhir pekan.</td><td class="text-mute"><b class="text-ink">Cek pukul 14:00 WIB</b> hari Senin.</td></tr>
+          <tr><td class="text-mute font-semibold">Jangan entry · sideways</td><td class="text-mute">Grade Hindari. Tren H1 tidak jelas.</td><td class="text-mute"><b class="text-ink">Cek lagi</b>: candle H1 berikutnya tutup.</td></tr>
+        </tbody>
+      </table>
+      <h3>Istilah</h3>
+      <table><tbody>
+        <tr><td class="font-medium">E</td><td class="text-mute">Harga entry.</td></tr>
+        <tr><td class="font-medium text-down">SL</td><td class="text-mute">Stop loss: posisi ditutup rugi di sini.</td></tr>
+        <tr><td class="font-medium text-up">TP</td><td class="text-mute">Take profit 1 (untung = 1× risiko). Saat kena, tutup separuh dan geser SL ke harga entry.</td></tr>
+        <tr><td class="font-medium">lot</td><td class="text-mute">Ukuran posisi untuk akun cent, sudah disesuaikan dengan saldo dan risiko per entry.</td></tr>
+        <tr><td class="font-medium whitespace-nowrap">Jam ramai</td><td class="text-mute">London 14:00–23:00 WIB, New York 19:00–04:00 WIB.</td></tr>
+      </tbody></table>
+      <p class="text-xs text-faint mt-4">Kartu ini diperbarui otomatis tiap 1 menit selama tab Hari Ini terbuka. Harga emas dari futures GC=F: samakan dengan harga Exness di halaman Forex.</p>`,
+  },
+};
+function openInfo(key) {
+  const g = GUIDES[key];
+  $('#info-title').textContent = g.title;
+  $('#info-body').innerHTML = g.body();
+  infoDlg.showModal();
+}
+
+const fmt = (n, d = 0) => n == null || isNaN(n) ? '–' : Number(n).toLocaleString('id-ID', { minimumFractionDigits: d, maximumFractionDigits: d });
+const rp = (n) => n == null ? '–' : 'Rp ' + fmt(n);
+const rpShort = (n) => n == null ? '–' : (n >= 1e12 ? fmt(n / 1e12, 1) + ' T' : n >= 1e9 ? fmt(n / 1e9, 1) + ' M' : n >= 1e6 ? fmt(n / 1e6, 1) + ' jt' : fmt(n));
+const pct = (n, d = 1) => n == null ? '–' : (n > 0 ? '+' : '') + fmt(n, d) + '%';
+const tone = (n) => n > 0 ? 'text-up' : n < 0 ? 'text-down' : 'text-mute';
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const stripEmoji = (s) => String(s ?? '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{1F000}-\u{1F2FF}]/gu, '').trim();
+const dayName = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error((await r.text()).slice(0, 200) || r.statusText);
+  return r.json();
+}
+const post = (path, body) => api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+const loading = (msg = 'Memuat…') => `<div class="px-4 py-8 text-center text-mute text-xs">${msg}</div>`;
+const failed = (e) => `<div class="px-4 py-8 text-center text-down text-xs">Gagal memuat: ${esc(e.message)}</div>`;
+const empty = (msg) => `<div class="px-4 py-8 text-center text-mute text-xs">${msg}</div>`;
+
+function gradeBadge(g) {
+  const cls = { A: 'text-up border-up/40', B: 'text-warn border-warn/40', C: 'text-mute border-line', Tunggu: 'text-warn border-warn/40', Hindari: 'text-mute border-line' }[g] || 'text-mute border-line';
+  return `<span class="inline-block border ${cls} rounded px-1.5 py-0.5 text-[11px] font-medium">${esc(g)}</span>`;
+}
+
+// ------------------------------------------------------------------ router
+const views = ['hari-ini', 'saham', 'forex', 'rekam', 'alat'];
+function route() {
+  const page = views.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'hari-ini';
+  document.querySelectorAll('[data-view]').forEach(el => el.hidden = el.dataset.view !== page);
+  document.querySelectorAll('.nav-link').forEach(a => a.setAttribute('aria-current', a.dataset.page === page ? 'page' : 'false'));
+  ({ 'hari-ini': renderToday, saham: renderSaham, forex: renderForex, rekam: renderRekam, alat: renderTool })[page]();
+}
+window.addEventListener('hashchange', route);
+
+// ------------------------------------------------------------------ status bar
+async function loadStatus() {
+  try {
+    const s = await api('/api/market-status');
+    $('#st-idx').textContent = s.idx.label;
+    $('#st-fx').textContent = s.fx.label;
+    $('#st-clock').textContent = s.now.slice(11) + ' WIB';
+  } catch (e) { /* biarkan status lama */ }
+}
+
+// ------------------------------------------------------------------ data loaders
+async function loadSettings() {
+  state.settings = await api('/api/settings');
+  $('#cap-daily').textContent = rpShort(state.settings.daily_capital);
+  $('#cap-weekly').textContent = rpShort(state.settings.weekly_capital);
+  $('#cap-fx').textContent = rpShort(state.settings.fx_balance_idr);
+}
+async function loadPicks(kind, force = false) {
+  if (force) { $('#picks-table').innerHTML = loading('Memindai ±130 saham, biasanya 10–60 detik…'); }
+  const q = new URLSearchParams({ kind });
+  if (force) q.set('force_refresh', 'true');
+  state.picks[kind] = await api('/api/picks?' + q);
+  if (force && location.hash === '#saham') renderSaham();
+  return state.picks[kind];
+}
+async function loadFx(force = false) {
+  state.fx = await api('/api/forex/signals' + (force ? '?force_refresh=true' : ''));
+  return state.fx;
+}
+
+// ------------------------------------------------------------------ HARI INI
+const dayShort = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
+const buyList = (d) => d.picks.filter(p => p.buy);
+
+function miniTable(d) {
+  const rows = d.picks.slice(0, 5);
+  if (!rows.length) return empty('Tidak ada saham yang lolos syarat. Lebih baik tidak memaksakan entry.');
+  return `<table class="w-full text-xs sm:text-sm">
+    <thead><tr class="text-xs"><th>Kode</th><th class="text-right">Entry</th><th class="text-right">SL</th><th class="text-right">TP1</th><th class="text-right">Lot</th><th class="text-right hidden sm:table-cell">Biaya</th></tr></thead>
+    <tbody>${rows.map(p => `<tr class="hover:bg-hover cursor-pointer ${p.buy ? '' : 'opacity-60'}" onclick="gotoPick('${p.kind}','${p.symbol}')">
+      <td class="whitespace-nowrap"><span class="font-medium">${p.symbol}</span> <span class="hidden sm:inline">${gradeBadge(p.grade)}</span> ${p.buy ? '<span class="tag-buy">Beli</span>' : '<span class="text-[11px] text-faint hidden sm:inline">cadangan</span>'}</td>
+      <td class="num text-right">${fmt(p.entry_low)}–${fmt(p.entry_high)}</td>
+      <td class="num text-right text-down">${fmt(p.sl)}</td>
+      <td class="num text-right text-up">${fmt(p.tp1)}</td>
+      <td class="num text-right">${p.lots}</td>
+      <td class="num text-right text-mute hidden sm:table-cell">${rpShort(p.cost)}</td></tr>`).join('')}</tbody></table>`;
+}
+
+function planFooter(d) {
+  const buys = buyList(d);
+  if (!buys.length) return `<div class="px-4 py-3 border-t border-line text-xs text-warn">Tidak ada grade A/B. Jangan beli apa pun untuk jenis ini.</div>`;
+  return `<div class="px-4 py-3 border-t border-line text-xs flex flex-wrap gap-x-4 gap-y-1">
+    <span class="text-mute">Rencana beli <b class="text-ink">${buys.length} saham</b></span>
+    <span class="text-mute">Total <b class="num text-ink">${rp(d.plan.cost)}</b> dari ${rp(d.capital)}</span>
+    <span class="text-mute">Rugi maks. <b class="num text-down">${rp(d.plan.risk)}</b></span>
+  </div>`;
+}
+
+const orderText = (p) => `<b>${p.symbol}</b> <span class="num">${p.lots} lot</span> <span class="text-mute">di</span> <span class="num">${fmt(p.entry_low)}–${fmt(p.entry_high)}</span>`;
+
+function renderPlan(h, w) {
+  const T = h.valid_for, today = h.today;
+  const buyWeekly = w.valid_for === T;              // Senin: beli mingguan juga
+  const sellWeekly = w.sell_on === T;               // Jumat: jual mingguan
+  const holdWeekly = w.valid_for < T && T < w.sell_on;
+  const hb = buyList(h), wb = buyList(w);
+  const now = new Date(Date.now() + 7 * 3600e3), nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const done = (min) => T === today && nowMin >= min;
+  const step = (time, min, title, detail) => `<li class="grid grid-cols-[92px_1fr] gap-3 ${done(min) ? 'opacity-50' : ''}">
+    <span class="num text-xs pt-0.5 ${done(min) ? 'text-faint line-through' : 'text-accent font-semibold'}">${time}</span>
+    <div><div class="font-medium">${title}</div>${detail ? `<div class="text-xs mt-0.5 space-y-0.5">${detail}</div>` : ''}</div></li>`;
+
+  const buyLines = [
+    ...(hb.length ? hb.map(p => `<div>Harian: ${orderText(p)}</div>`) : ['<div class="text-mute">Harian: tidak ada yang layak dibeli</div>']),
+    ...(buyWeekly ? (wb.length ? wb.map(p => `<div>Mingguan: ${orderText(p)}</div>`) : ['<div class="text-mute">Mingguan: tidak ada yang layak dibeli minggu ini</div>']) : []),
+  ].join('');
+  // Hari bursa berikutnya setelah T (hitung di UTC supaya tidak bergeser karena zona waktu)
+  const nd = new Date(T + 'T00:00:00Z'); nd.setUTCDate(nd.getUTCDate() + (nd.getUTCDay() === 5 ? 3 : 1));
+  const nextDayIso = nd.toISOString().slice(0, 10);
+
+  $('#today-plan-day').textContent = '· ' + dayShort(T);
+  $('#today-plan').innerHTML = [
+    step('08:45–08:58', 8 * 60 + 58, 'Pasang antrean beli (pra-pembukaan)', buyLines),
+    step('09:00', 9 * 60 + 5, 'Bursa buka: pasang SL & TP1 setelah terbeli', '<div class="text-mute">Pakai fitur auto order / stop loss di aplikasi sekuritas. Kalau harga buka sudah di atas Entry, jangan kejar; pakai saham cadangan.</div>'),
+    holdWeekly ? step('Sepanjang hari', 15 * 60 + 45, `Pegang saham Mingguan sampai Jumat`, `<div class="text-mute">${wb.map(p => p.symbol).join(', ') || 'Tidak ada posisi mingguan'} · SL & TP tetap terpasang · jual ${dayShort(w.sell_on)} 15:45</div>`) : '',
+    step('15:45', 15 * 60 + 45, sellWeekly ? 'Jual semua saham Harian <u>dan Mingguan</u> yang tersisa' : 'Jual semua saham Harian yang tersisa', '<div class="text-mute">Yang belum kena TP atau SL dijual di harga pasar, sebelum pra-penutupan 15:50.</div>'),
+    step('16:30', 16 * 60 + 30, `Daftar untuk ${dayShort(nextDayIso)} terbit di sini`, sellWeekly ? '<div class="text-mute">Termasuk daftar Mingguan untuk minggu depan.</div>' : ''),
+  ].join('');
+}
+
+function renderUpdate(h, w) {
+  const fmtDT = (iso) => `${dayShort(iso.slice(0, 10))} ${iso.slice(11, 16)} WIB`;
+  const status = (d, label) => d.data_ok
+    ? `<span class="text-up">●</span> ${label}: data penutupan <b class="num text-ink">${d.data_date}</b> · dibuat ${d.generated_at.slice(11)} WIB${d.late ? ' <span class="text-warn">(dibuat terlambat)</span>' : ''}`
+    : d.stale
+      ? `<span class="text-warn">●</span> ${label}: daftar terbaru belum terbit (biasanya 16:30–18:00 WIB). Sementara ditampilkan daftar terakhir, untuk ${dayShort(d.valid_for)}.`
+      : `<span class="text-warn">●</span> ${label}: data penutupan terakhir belum masuk (masih ${d.data_date}). Sistem mencoba lagi otomatis, atau klik Scan ulang di tab Saham.`;
+  $('#today-update').innerHTML = `<div class="text-xs text-mute space-y-1 border border-line rounded-lg px-4 py-3">
+    <div>${status(h, 'Harian')}</div>
+    <div>${status(w, 'Mingguan')}</div>
+    <div class="text-faint">Pembaruan berikutnya: Harian <b class="text-mute">${fmtDT(h.next_update)}</b> · Mingguan <b class="text-mute">${fmtDT(w.next_update)}</b> (otomatis setelah bursa tutup)</div>
+  </div>`;
+}
+
+async function renderToday() {
+  ['harian', 'mingguan'].forEach(k => { $(`#today-${k}`).innerHTML = loading(); $(`#today-${k}-plan`).innerHTML = ''; });
+  $('#today-fx').innerHTML = loading();
+  loadSettings().catch(() => {});
+  renderTodayFx();
+  try {
+    const [h, w] = await Promise.all([loadPicks('harian'), loadPicks('mingguan')]);
+    const isToday = h.valid_for === h.today;
+    $('#today-title').textContent = (isToday ? 'Hari ini · ' : 'Persiapan · ') + dayShort(h.valid_for);
+    $('#today-sub').textContent = isToday ? 'Rencana trading saham hari ini.' : 'Bursa sudah tutup. Ini rencana untuk hari bursa berikutnya.';
+    renderUpdate(h, w);
+    renderPlan(h, w);
+    $('#today-harian-meta').textContent = `${dayShort(h.valid_for)} · modal ${rpShort(h.capital)} · ${h.positions} saham`;
+    const wHolding = w.valid_for < h.today;
+    $('#today-mingguan-meta').textContent = (wHolding ? 'Minggu ini · pegang sampai ' : `Beli ${dayShort(w.valid_for)} → jual `) + `${dayShort(w.sell_on)} 15:45 · modal ${rpShort(w.capital)}`;
+    $('#today-harian').innerHTML = miniTable(h); $('#today-harian-plan').innerHTML = planFooter(h);
+    $('#today-mingguan').innerHTML = miniTable(w); $('#today-mingguan-plan').innerHTML = planFooter(w);
+  } catch (e) { $('#today-harian').innerHTML = failed(e); $('#today-mingguan').innerHTML = ''; }
+}
+
+async function renderTodayFx() {
+  try {
+    const fx = await loadFx();
+    $('#today-fx').innerHTML = fx.signals.map(fxMini).join('');
+  } catch (e) { $('#today-fx').innerHTML = failed(e); }
+}
+// Perbarui ringkasan forex tiap menit selama tab Hari Ini terbuka
+setInterval(() => { if (!document.hidden && !$('[data-view="hari-ini"]').hidden) renderTodayFx(); }, 60000);
+
+function gotoPick(kind, sym) { state.kind = kind; state.selected = sym; location.hash = '#saham'; }
+
+// Jam patokan sinyal forex: "14:00 WIB · Senin · 3 jam lagi"
+function fxWhen(iso) {
+  const t = new Date(iso), now = new Date();
+  const hm = iso.slice(11, 16) + ' WIB';
+  const sameDay = iso.slice(0, 10) === new Date(now.getTime() + 7 * 3600e3).toISOString().slice(0, 10);
+  const day = sameDay ? '' : ' · ' + dayName(iso.slice(0, 10));
+  const mins = Math.round((t - now) / 60000);
+  const rel = mins <= 0 ? 'lewat, refresh' : mins < 60 ? `${mins} mnt lagi` : `${Math.floor(mins / 60)} jam ${mins % 60 ? (mins % 60) + ' mnt ' : ''}lagi`;
+  return { hm, day, rel, late: mins <= 0 };
+}
+
+function fxMini(s) {
+  if (!s.valid) return `<div class="p-4 text-xs text-mute">${s.symbol}: ${esc(s.error)}</div>`;
+  const p = s.plan, a = s.action, d = s.digits;
+  const color = { now: 'text-up', limit: 'text-accent', wait: 'text-warn', skip: 'text-mute' }[a?.kind] || 'text-mute';
+  const w = a && fxWhen(a.at);
+  const showLevels = p && a && a.kind !== 'skip';
+  return `<div class="p-4 flex flex-col gap-2">
+    <div class="flex items-center justify-between">
+      <span class="font-medium">${s.symbol} <span class="num text-mute font-normal">${fmt(s.price, d)}</span></span>${gradeBadge(s.grade)}
+    </div>
+    ${a ? `<div class="font-semibold ${color}">${esc(a.text)}</div>
+    <div class="text-xs"><span class="text-mute">${esc(a.at_label)}</span> <span class="num font-semibold text-ink">${w.hm}</span><span class="text-mute">${w.day}</span> <span class="${w.late ? 'text-warn' : 'text-faint'}">(${w.rel})</span></div>` : ''}
+    ${showLevels ? `<div class="num text-xs border-t border-line pt-2">${a.kind === 'wait' ? '<span class="text-faint font-sans">Rencana</span> ' : ''}E ${fmt(p.entry, d)} · <span class="text-down">SL ${fmt(p.sl, d)}</span> · <span class="text-up">TP ${fmt(p.tp1, d)}</span> · ${fmt(p.lots, 2)} lot</div>` : ''}
+  </div>`;
+}
+
+
+// ------------------------------------------------------------------ SAHAM
+function bindSeg(id, key, onChange) {
+  document.querySelectorAll(`#${id} button`).forEach(b => b.onclick = () => { state[key] = b.dataset.v; onChange(); });
+}
+function paintSeg(id, val) {
+  document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === val));
+}
+bindSeg('seg-kind', 'kind', () => { state.selected = null; renderSaham(); });
+
+async function renderSaham() {
+  paintSeg('seg-kind', state.kind);
+  if (!state.picks[state.kind]) {
+    $('#picks-table').innerHTML = loading();
+    try { await loadPicks(state.kind); } catch (e) { $('#picks-table').innerHTML = failed(e); return; }
+  }
+  const d = state.picks[state.kind];
+  const when = d.kind === 'harian'
+    ? `Beli & jual <span class="text-ink">${dayName(d.valid_for)}</span>`
+    : `Beli <span class="text-ink">${dayName(d.valid_for)}</span> → jual <span class="text-ink">${dayName(d.sell_on)}</span> 15:45`;
+  const stale = !d.data_ok ? ' · <span class="text-warn">data penutupan terakhir belum masuk</span>' : '';
+  $('#picks-meta').innerHTML = `${when} · data penutupan ${d.data_date} · dibuat ${d.generated_at} WIB · ${d.scanned} saham dipindai · modal ${rp(d.capital)} untuk ${d.positions} saham${stale}`;
+  const rows = d.picks;
+  if (!rows.length) { $('#picks-table').innerHTML = empty('Tidak ada saham yang lolos syarat. Hari seperti ini lebih baik menunggu.'); $('#pick-detail').hidden = true; return; }
+
+  $('#picks-table').innerHTML = `<table class="w-full">
+    <thead><tr class="text-xs">
+      <th>#</th><th>Kode</th><th>Grade</th><th></th><th class="text-right">Harga</th><th class="text-right">Zona entry</th>
+      <th class="text-right">SL</th><th class="text-right">TP1</th><th class="text-right">TP2</th>
+      <th class="text-right">Lot</th><th class="text-right">Rugi maks.</th><th>Alasan</th></tr></thead>
+    <tbody>${rows.map((p, i) => `<tr class="hover:bg-hover cursor-pointer ${state.selected === p.symbol ? 'bg-hover' : ''}" onclick="selectPick('${p.symbol}')">
+      <td class="text-faint num">${i + 1}</td>
+      <td class="font-medium">${p.symbol}</td>
+      <td>${gradeBadge(p.grade)}</td>
+      <td>${p.buy ? '<span class="tag-buy">Beli</span>' : '<span class="text-[11px] text-faint">cadangan</span>'}</td>
+      <td class="num text-right">${fmt(p.close)} <span class="${tone(p.change_pct)} text-xs">${pct(p.change_pct)}</span></td>
+      <td class="num text-right">${fmt(p.entry_low)}–${fmt(p.entry_high)}</td>
+      <td class="num text-right text-down">${fmt(p.sl)} <span class="text-xs">${pct(p.sl_pct)}</span></td>
+      <td class="num text-right text-up">${fmt(p.tp1)} <span class="text-xs">${pct(p.tp1_pct)}</span></td>
+      <td class="num text-right text-up">${fmt(p.tp2)} <span class="text-xs">${pct(p.tp2_pct)}</span></td>
+      <td class="num text-right">${p.affordable ? p.lots : '–'}</td>
+      <td class="num text-right ${p.risk_over_budget ? 'text-warn' : ''}">${p.affordable ? rp(p.risk_rp) : '<span class="text-faint">di luar modal</span>'}</td>
+      <td class="text-xs text-mute min-w-[220px]">${p.reasons.map(esc).join(' · ')}</td></tr>`).join('')}</tbody></table>`;
+
+  if (state.selected && rows.some(r => r.symbol === state.selected)) selectPick(state.selected);
+  else $('#pick-detail').hidden = true;
+}
+
+let pickChart;
+async function selectPick(sym) {
+  state.selected = sym;
+  const p = state.picks[state.kind].picks.find(r => r.symbol === sym);
+  const d = state.picks[state.kind];
+  document.querySelectorAll('#picks-table tbody tr').forEach(tr => tr.classList.toggle('bg-hover', tr.children[1].textContent === sym));
+  const box = $('#pick-detail'); box.hidden = false;
+  const sellBy = p.kind === 'harian' ? `hari yang sama (${dayName(d.sell_on)}) pukul 15:45` : `${dayName(d.sell_on)} pukul 15:45`;
+  box.innerHTML = `<div class="bg-panel border border-line rounded-lg p-4 grid lg:grid-cols-3 gap-5">
+    <div class="space-y-3">
+      <div class="flex items-center gap-2"><h2 class="text-lg font-semibold">${p.symbol}</h2>${gradeBadge(p.grade)}<span class="text-xs text-mute">skor ${fmt(p.score, 1)}</span></div>
+      <ol class="space-y-2 text-sm leading-relaxed list-decimal list-inside marker:text-faint">
+        <li>${dayName(d.valid_for)} 08:45–08:58: antre beli <b class="num">${p.lots} lot</b> di <b class="num">${fmt(p.entry_low)}–${fmt(p.entry_high)}</b> (±${rp(p.cost)}). Jangan beli di atas ${fmt(p.entry_high)}.</li>
+        <li>Cut loss jika harga menyentuh <b class="num text-down">${fmt(p.sl)}</b>. Rugi maksimal ±<b class="num">${rp(p.risk_rp)}</b>.</li>
+        <li>Jual di <b class="num text-up">${fmt(p.tp1)}</b> (TP1). Kalau ingin lebih, jual separuh di TP1 lalu sisanya di <b class="num text-up">${fmt(p.tp2)}</b>.</li>
+        <li>Belum kena TP/SL? Jual semua paling lambat ${sellBy}.</li>
+      </ol>
+      ${p.risk_over_budget ? '<p class="text-xs text-warn">Rugi 1 lot sudah melebihi batas risiko. Pertimbangkan dilewati.</p>' : ''}
+      <ul class="text-xs text-mute space-y-1">${p.reasons.map(r => `<li>– ${esc(r)}</li>`).join('')}</ul>
+    </div>
+    <div class="lg:col-span-2"><div id="pick-chart" class="h-[340px]"></div></div>
+  </div>`;
+  drawChart('#pick-chart', sym, state.kind === 'harian' ? '3mo' : '6mo', '1d', { entry: p.entry_high, sl: p.sl, tp1: p.tp1, tp2: p.tp2 }, (c) => pickChart = c, pickChart);
+}
+
+// ------------------------------------------------------------------ tema
+const cssColor = (name) => `rgb(${getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim().split(/\s+/).join(',')})`;
+const liveCharts = new Set();
+function chartTheme() {
+  return {
+    layout: { textColor: cssColor('mute') },
+    grid: { vertLines: { color: cssColor('hover') }, horzLines: { color: cssColor('hover') } },
+    rightPriceScale: { borderColor: cssColor('line') },
+    timeScale: { borderColor: cssColor('line') },
+  };
+}
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('theme', next);
+  const opts = chartTheme();
+  liveCharts.forEach(c => { try { c.applyOptions(opts); } catch (e) { liveCharts.delete(c); } });
+}
+
+// ------------------------------------------------------------------ chart helper
+async function drawChart(sel, symbol, period, interval, levels, keep, old) {
+  const el = $(sel);
+  if (old) { liveCharts.delete(old); try { old.remove(); } catch (e) {} }
+  el.innerHTML = loading('Memuat chart…');
+  let d;
+  try { d = await api(`/api/chart/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}`); }
+  catch (e) { el.innerHTML = failed(e); return; }
+  el.innerHTML = '';
+  const th = chartTheme();
+  const chart = LightweightCharts.createChart(el, {
+    autoSize: true,
+    layout: { background: { color: 'transparent' }, textColor: th.layout.textColor, fontFamily: 'JetBrains Mono' },
+    grid: th.grid,
+    rightPriceScale: th.rightPriceScale,
+    timeScale: { ...th.timeScale, timeVisible: interval !== '1d' },
+    crosshair: { mode: 0 },
+  });
+  liveCharts.add(chart);
+  const up = cssColor('up'), down = cssColor('down');
+  const candles = chart.addCandlestickSeries({ upColor: up, downColor: down, borderVisible: false, wickUpColor: up, wickDownColor: down });
+  candles.setData(d.candles);
+  const vol = chart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol' });
+  chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+  vol.setData(d.volumes.map(v => ({ ...v, color: v.color.replace('0.45', '0.25') })));
+  if (interval === '1d') chart.addLineSeries({ color: cssColor('faint'), lineWidth: 1, priceLineVisible: false, lastValueVisible: false }).setData(d.ma20);
+  const line = (price, color, title) => price && candles.createPriceLine({ price, color, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title });
+  if (levels) {
+    line(levels.entry, cssColor('accent'), 'Entry'); line(levels.sl, down, 'SL');
+    line(levels.tp1, up, 'TP1'); line(levels.tp2, up, 'TP2');
+  }
+  chart.timeScale().fitContent();
+  keep(chart);
+}
+
+// ------------------------------------------------------------------ FOREX
+function fxCard(s) {
+  if (!s.valid) return `<div class="bg-panel border border-line rounded-lg p-4 text-mute text-xs">${s.symbol}: ${esc(s.error)}</div>`;
+  const p = s.plan, d = s.digits;
+  // Emas lebih mudah dibaca dalam dolar ($1 = 10 pip), pasangan mata uang dalam pip
+  const dist = (pips) => s.symbol === 'XAUUSD' ? '$' + fmt(pips / 10, 2) : fmt(pips, 1) + ' pip';
+  const check = (ok, label) => `<li class="${ok ? 'text-ink' : 'text-faint'}">${ok ? '●' : '○'} ${label}</li>`;
+  return `<div class="bg-panel border border-line rounded-lg p-4 flex flex-col gap-3 cursor-pointer hover:border-faint ${state.fxChartSym === s.symbol ? 'border-faint' : ''}" onclick="showFxChart('${s.symbol}')">
+    <div class="flex items-start justify-between">
+      <div><div class="font-semibold">${s.symbol}</div><div class="text-xs text-mute">${s.name}</div></div>
+      ${gradeBadge(s.grade)}
+    </div>
+    <div class="num text-2xl">${fmt(s.price, d)}</div>
+    <ul class="text-xs space-y-0.5">
+      ${check(s.checks.trend_h1, `Tren H1: ${s.bias}`)}
+      ${check(s.checks.trigger_m15, s.trigger || 'Trigger M15 belum muncul')}
+      ${check(s.checks.session, 'Jam London / New York')}
+    </ul>
+    ${p ? `<div class="border-t border-line pt-3 space-y-1.5">
+      <div class="text-xs"><span class="${p.side === 'buy' ? 'text-up' : 'text-down'} font-semibold">${p.side.toUpperCase()}</span> <span class="text-mute">· ${esc(p.order_type)}</span></div>
+      <dl class="grid grid-cols-[auto_1fr_auto] gap-x-3 gap-y-1 num text-xs">
+        <dt class="text-mute">Entry</dt><dd class="text-right">${fmt(p.entry, d)}</dd><dd></dd>
+        <dt class="text-mute">SL</dt><dd class="text-right text-down">${fmt(p.sl, d)}</dd><dd class="text-faint text-right">${dist(p.sl_pips)}</dd>
+        <dt class="text-mute">TP1</dt><dd class="text-right text-up">${fmt(p.tp1, d)}</dd><dd class="text-faint text-right">${dist(p.tp1_pips)}</dd>
+        <dt class="text-mute">TP2</dt><dd class="text-right text-up">${fmt(p.tp2, d)}</dd><dd class="text-faint text-right">${dist(p.tp2_pips)}</dd>
+        <dt class="text-mute">Lot</dt><dd class="text-right">${fmt(p.lots, 2)}</dd><dd class="text-faint text-right">cent</dd>
+        <dt class="text-mute">Risiko</dt><dd class="text-right">${fmt(p.risk_usc)} USC</dd><dd class="text-faint text-right">${rp(p.risk_idr)}</dd>
+      </dl></div>` : ''}
+    <ul class="text-xs text-mute space-y-1 leading-relaxed">${s.insight.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+    <div class="text-[11px] text-faint mt-auto">Candle terakhir ${s.last_bar} WIB · ATR M15 ${dist(s.atr_pips)} · RSI ${fmt(s.rsi_m15, 0)}${s.offset ? ` · offset ${fmt(s.offset, 2)}` : ''}</div>
+  </div>`;
+}
+
+let fxChart;
+function showFxChart(sym) {
+  state.fxChartSym = sym;
+  const s = state.fx.signals.find(x => x.symbol === sym);
+  $('#fx-cards').innerHTML = state.fx.signals.map(fxCard).join('');
+  $('#fx-chart-title').textContent = `${sym} · M15`;
+  const off = s.offset || 0;
+  const lv = s.plan ? { entry: s.plan.entry - off, sl: s.plan.sl - off, tp1: s.plan.tp1 - off, tp2: s.plan.tp2 - off } : null;
+  const chartSym = sym === 'XAUUSD' ? 'XAU' : sym;
+  drawChart('#fx-chart', chartSym, '5d', '15m', lv, (c) => fxChart = c, fxChart);
+}
+
+async function renderForex() {
+  $('#fx-cards').innerHTML = loading();
+  try {
+    await loadSettings();
+    $('#in-fx-bal').value = state.settings.fx_balance_idr;
+    $('#in-fx-risk').value = state.settings.fx_risk_pct;
+    const fx = await loadFx();
+    $('#fx-meta').textContent = `${fx.session.label} · saldo ${fmt(fx.balance_usc)} USC (kurs ${fmt(fx.usd_idr)}) · risiko ${fmt(fx.risk_pct, 1)}%/entry · diperbarui ${fx.generated_at.slice(11)} WIB`;
+    showFxChart(state.fxChartSym);
+  } catch (e) { $('#fx-cards').innerHTML = failed(e); }
+}
+
+async function saveFxSettings(ev) {
+  ev.preventDefault();
+  await post('/api/settings', { fx_balance_idr: +$('#in-fx-bal').value, fx_risk_pct: +$('#in-fx-risk').value });
+  renderForex();
+}
+async function saveOffset(ev) {
+  ev.preventDefault();
+  const v = +$('#in-xau').value; if (!v) return;
+  const r = await post('/api/forex/offset', { exness_price: v });
+  $('#in-xau').value = '';
+  if (!r.success) alertInline(r.message);
+  renderForex();
+}
+function alertInline(msg) { $('#fx-meta').textContent = msg; }
+
+// ------------------------------------------------------------------ PENGATURAN
+async function openSettings() {
+  await loadSettings();
+  const f = settingsDlg.querySelector('form');
+  Object.entries(state.settings).forEach(([k, v]) => { if (f.elements[k]) f.elements[k].value = v; });
+  settingsDlg.showModal();
+}
+async function saveSettings(ev) {
+  ev.preventDefault();
+  const f = ev.target, body = {};
+  [...f.elements].filter(i => i.name).forEach(i => body[i.name] = +i.value);
+  await post('/api/settings', body);
+  settingsDlg.close();
+  state.picks = {}; route();
+}
+
+// ------------------------------------------------------------------ REKAM JEJAK
+async function renderRekam() {
+  $('#tr-summary').innerHTML = loading(); $('#tr-rows').innerHTML = '';
+  let d;
+  try { d = await api('/api/track-record'); } catch (e) { $('#tr-summary').innerHTML = failed(e); return; }
+  const names = { harian: 'Saham harian', mingguan: 'Saham mingguan', scalp: 'Scalp (lama)', invest: 'Invest (lama)', forex: 'Forex' };
+  $('#tr-summary').innerHTML = Object.entries(d.summary).map(([k, s]) => `<div class="bg-panel border border-line rounded-lg p-4">
+    <div class="text-mute text-xs">${names[k]}</div>
+    <div class="flex items-baseline gap-4 mt-1">
+      <div><span class="num text-2xl">${s.win_rate == null ? '–' : fmt(s.win_rate, 0) + '%'}</span> <span class="text-xs text-mute">menang</span></div>
+      <div><span class="num text-lg ${tone(s.avg_r)}">${s.avg_r == null ? '–' : (s.avg_r > 0 ? '+' : '') + fmt(s.avg_r, 2) + 'R'}</span> <span class="text-xs text-mute">rata-rata</span></div>
+    </div>
+    <div class="text-xs text-faint mt-1">${s.closed} selesai dari ${s.total} rekomendasi</div>
+    ${Object.keys(s.by_grade).length ? `<table class="w-full mt-3 text-xs"><thead><tr><th>Grade</th><th class="text-right">Selesai</th><th class="text-right">Menang</th><th class="text-right">Rata R</th></tr></thead><tbody>
+      ${Object.entries(s.by_grade).map(([g, x]) => `<tr><td>${g}</td><td class="num text-right">${x.closed}</td><td class="num text-right">${x.win_rate == null ? '–' : fmt(x.win_rate, 0) + '%'}</td><td class="num text-right ${tone(x.avg_r)}">${x.avg_r == null ? '–' : fmt(x.avg_r, 2)}</td></tr>`).join('')}
+    </tbody></table>` : ''}
+  </div>`).join('');
+  if (!d.rows.length) { $('#tr-rows').innerHTML = empty('Belum ada data. Rekam jejak terisi otomatis setelah rekomendasi berjalan 1–2 hari bursa (server perlu menyala pukul 16:30 WIB saat daftar dibuat, atau buka web setelah bursa tutup).'); return; }
+  const st = { tp: ['Kena TP1', 'text-up'], sl: ['Kena SL', 'text-down'], berjalan: ['Berjalan', 'text-mute'], kedaluwarsa: ['Habis waktu', 'text-mute'], 'tidak terisi': ['Tidak terisi', 'text-faint'] };
+  $('#tr-rows').innerHTML = `<table class="w-full"><thead><tr class="text-xs"><th>Tanggal</th><th>Jenis</th><th>Kode</th><th>Grade</th><th class="text-right">Entry</th><th class="text-right">SL</th><th class="text-right">TP1</th><th>Hasil</th><th class="text-right">R</th></tr></thead>
+    <tbody>${d.rows.map(r => `<tr><td class="num text-xs">${r.date.slice(0, 16)}</td><td class="text-mute">${names[r.kind]}</td><td class="font-medium">${r.symbol}</td><td>${gradeBadge(r.grade)}</td>
+      <td class="num text-right">${fmt(r.entry, r.kind === 'forex' ? 2 : 0)}</td><td class="num text-right">${fmt(r.sl, r.kind === 'forex' ? 2 : 0)}</td><td class="num text-right">${fmt(r.tp1, r.kind === 'forex' ? 2 : 0)}</td>
+      <td class="${(st[r.status] || [])[1]}">${(st[r.status] || [r.status])[0]}</td><td class="num text-right ${tone(r.r)}">${fmt(r.r, 2)}</td></tr>`).join('')}</tbody></table>`;
+}
+
+// ------------------------------------------------------------------ ALAT
+document.querySelectorAll('#tool-nav button').forEach(b => b.onclick = () => { state.tool = b.dataset.tool; renderTool(); });
+
+function table(head, rows) {
+  if (!rows.length) return empty('Tidak ada data yang lolos filter saat ini.');
+  return `<div class="bg-panel border border-line rounded-lg overflow-x-auto"><table class="w-full"><thead><tr class="text-xs">${head.map(h => `<th class="${h.startsWith('>') ? 'text-right' : ''}">${h.replace('>', '')}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+}
+
+const tools = {
+  async bandar(el) {
+    const d = await api('/api/bandar?limit=20');
+    el.innerHTML = `<p class="text-xs text-mute mb-3">Skor akumulasi 0–100 dari CMF, tren OBV dan volume. ${d.big_inflow_count} akumulasi besar, ${d.distribution_count} distribusi dari ${d.total_scanned} saham.</p>` +
+      table(['Kode', '>Harga', '>1 hari', '>5 hari', '>CMF', '>RVol', '>Skor', 'Status'], d.accumulations.map(r => `<tr><td class="font-medium">${r.symbol}</td><td class="num text-right">${fmt(r.close)}</td><td class="num text-right ${tone(r.change_1d)}">${pct(r.change_1d)}</td><td class="num text-right ${tone(r.change_5d)}">${pct(r.change_5d)}</td><td class="num text-right">${fmt(r.cmf, 2)}</td><td class="num text-right">${fmt(r.rvol, 2)}x</td><td class="num text-right">${r.score}</td><td class="text-xs text-mute">${esc(stripEmoji(r.status))}</td></tr>`));
+  },
+  async breakout(el) {
+    const d = await api('/api/breakout');
+    el.innerHTML = `<p class="text-xs text-mute mb-3">Saham dengan lonjakan volume dan kenaikan harga hari ini.</p>` +
+      table(['Kode', '>Harga', '>Naik', '>RVol', '>Nilai transaksi', '>High 20h', 'Status'], d.breakouts.map(r => `<tr><td class="font-medium">${r.symbol}</td><td class="num text-right">${fmt(r.close)}</td><td class="num text-right ${tone(r.change_pct)}">${pct(r.change_pct)}</td><td class="num text-right">${fmt(r.rvol, 2)}x</td><td class="num text-right">${rpShort(r.turnover)}</td><td class="num text-right">${fmt(r.high_20d)}</td><td class="text-xs text-mute">${r.is_break_high20 ? 'Tembus high 20 hari' : r.is_break_ma20 ? 'Tembus MA20' : 'Belum tembus resisten'}</td></tr>`));
+  },
+  async sektor(el) {
+    const d = await api('/api/sektor');
+    el.innerHTML = `<p class="text-xs text-mute mb-3">Rata-rata perubahan harian per sektor. Sektor di atas menunjukkan ke mana uang sedang mengalir.</p>` +
+      table(['Sektor', '>Rata-rata', '>Naik / Turun', '>Nilai transaksi', 'Penggerak', 'Pemberat'], d.sectors.map(s => `<tr><td class="font-medium">${esc(stripEmoji(s.name))}</td><td class="num text-right ${tone(s.avg_change)}">${pct(s.avg_change, 2)}</td><td class="num text-right">${s.green_count} / ${s.red_count}</td><td class="num text-right">${rpShort(s.total_turnover)}</td><td class="text-xs">${s.top_gainer ? `${s.top_gainer.symbol} <span class="text-up num">${pct(s.top_gainer.change_pct)}</span>` : '–'}</td><td class="text-xs">${s.top_loser ? `${s.top_loser.symbol} <span class="text-down num">${pct(s.top_loser.change_pct)}</span>` : '–'}</td></tr>`));
+  },
+  async swing(el) {
+    const d = await api('/api/swing?limit=15');
+    el.innerHTML = `<p class="text-xs text-mute mb-3">Saham yang sedang turun dekat support (RSI rendah) dengan tanda memantul. Lebih berisiko daripada rekomendasi Invest.</p>` +
+      table(['Kode', '>Harga', '>RSI', '>Support', '>SL', '>Target', '>R:R'], d.swings.map(r => `<tr><td class="font-medium">${r.symbol}</td><td class="num text-right">${fmt(r.close)}</td><td class="num text-right">${fmt(r.rsi, 0)}</td><td class="num text-right">${fmt(r.support)}</td><td class="num text-right text-down">${fmt(r.sl_price)} <span class="text-xs">-${fmt(r.sl_pct, 1)}%</span></td><td class="num text-right text-up">${fmt(r.tp_price)} <span class="text-xs">+${fmt(r.tp_pct, 1)}%</span></td><td class="num text-right">1:${fmt(r.rrr, 1)}</td></tr>`));
+  },
+  async chart(el) {
+    el.innerHTML = `<form class="flex gap-2 mb-3 text-xs" onsubmit="event.preventDefault(); drawChart('#tool-chart', this.sym.value, this.period.value, '1d', null, c => window._toolChart = c, window._toolChart)">
+      <input name="sym" value="BBCA" class="num w-28 uppercase" placeholder="Kode">
+      <select name="period" class="bg-bg border border-line rounded-md px-2"><option value="3mo">3 bulan</option><option value="6mo" selected>6 bulan</option><option value="1y">1 tahun</option></select>
+      <button class="border border-line rounded-md px-3 py-1.5">Tampilkan</button></form>
+      <div class="bg-panel border border-line rounded-lg p-3"><div id="tool-chart" class="h-[420px]"></div></div>`;
+    drawChart('#tool-chart', 'BBCA', '6mo', '1d', null, c => window._toolChart = c, window._toolChart);
+  },
+  async crypto(el) {
+    const d = await api('/api/crypto_forex');
+    el.innerHTML = table(['Aset', '>Harga', '>24 jam'], [...d.crypto, ...d.forex].map(r => `<tr><td class="font-medium">${esc(r.name)}</td><td class="num text-right">${esc(r.formatted_price)}</td><td class="num text-right ${tone(r.change_pct)}">${pct(r.change_pct, 2)}</td></tr>`));
+  },
+  async paper(el) {
+    const d = await api('/api/portfolio');
+    el.innerHTML = `<div class="grid sm:grid-cols-4 gap-3 mb-4">
+        ${[['Ekuitas', rp(d.total_equity)], ['Kas', rp(d.cash_balance)], ['Untung/rugi', `<span class="${tone(d.overall_pnl)}">${rp(d.overall_pnl)} (${pct(d.overall_pnl_pct, 2)})</span>`], ['Win rate', `${fmt(d.win_rate, 0)}% dari ${d.total_trades}`]].map(([k, v]) => `<div class="bg-panel border border-line rounded-lg p-3"><div class="text-xs text-mute">${k}</div><div class="num mt-1">${v}</div></div>`).join('')}
+      </div>
+      <form class="flex flex-wrap gap-2 mb-4 text-xs" onsubmit="paperOrder(event)">
+        <input name="symbol" placeholder="Kode" class="num w-24 uppercase" required>
+        <input name="lots" type="number" placeholder="Lot" class="num w-20" required min="1">
+        <button name="side" value="buy" class="border border-up/50 text-up rounded-md px-3 py-1.5">Beli</button>
+        <button name="side" value="sell" class="border border-down/50 text-down rounded-md px-3 py-1.5">Jual</button>
+        <span id="paper-msg" class="text-mute self-center"></span>
+        <button type="button" onclick="paperReset()" class="ml-auto text-mute hover:text-ink">Reset akun</button>
+      </form>
+      <h3 class="font-medium mb-2">Posisi</h3>
+      ${table(['Kode', '>Lot', '>Avg', '>Harga', '>Nilai', '>P/L', '>TP', '>SL'], d.positions.map(p => `<tr><td class="font-medium">${p.symbol}</td><td class="num text-right">${p.lots}</td><td class="num text-right">${fmt(p.avg_price)}</td><td class="num text-right">${fmt(p.current_price)}</td><td class="num text-right">${rp(p.market_value)}</td><td class="num text-right ${tone(p.unrealized_pnl)}">${rp(p.unrealized_pnl)} (${pct(p.pnl_pct, 2)})</td><td class="num text-right">${fmt(p.tp_price)}</td><td class="num text-right">${fmt(p.sl_price)}</td></tr>`))}
+      <h3 class="font-medium mt-5 mb-2">Riwayat</h3>
+      ${table(['Tanggal', 'Kode', '>Lot', '>Beli', '>Jual', '>P/L', 'Alasan'], d.trade_history.slice().reverse().map(t => `<tr><td class="num text-xs">${esc(t.date)}</td><td class="font-medium">${t.symbol}</td><td class="num text-right">${t.lots}</td><td class="num text-right">${fmt(t.buy_price)}</td><td class="num text-right">${fmt(t.sell_price)}</td><td class="num text-right ${tone(t.net_pnl)}">${rp(t.net_pnl)}</td><td class="text-xs text-mute">${esc(t.reason)}</td></tr>`))}`;
+  },
+  async alerts(el) {
+    const d = await api('/api/alerts');
+    el.innerHTML = `<form class="flex gap-2 mb-4 text-xs" onsubmit="addAlert(event)">
+        <input name="symbol" placeholder="Kode (BBCA, XAU, BTC)" class="num w-44 uppercase" required>
+        <input name="price" type="number" step="any" placeholder="Harga target" class="num w-32" required>
+        <button class="border border-line rounded-md px-3 py-1.5">Pasang alarm</button></form>
+      <p class="text-xs text-mute mb-3">Alarm dikirim lewat bot Telegram (perlu bot_telegram.py berjalan).</p>
+      ${table(['#', 'Kode', '>Target', 'Arah', ''], d.alerts.map(a => `<tr><td class="num">${a.id}</td><td class="font-medium">${esc(a.symbol)}</td><td class="num text-right">${fmt(a.target_price, 2)}</td><td class="text-xs text-mute">${esc(a.direction || '')}</td><td class="text-right"><button onclick="delAlert(${a.id})" class="text-xs text-down">Hapus</button></td></tr>`))}`;
+  },
+};
+
+async function renderTool() {
+  document.querySelectorAll('#tool-nav button').forEach(b => {
+    const on = b.dataset.tool === state.tool;
+    b.classList.toggle('text-ink', on); b.classList.toggle('bg-hover', on); b.classList.toggle('text-mute', !on);
+  });
+  const el = $('#tool-body');
+  el.innerHTML = loading('Memuat… (scan pertama bisa 10–30 detik)');
+  try { await tools[state.tool](el); } catch (e) { el.innerHTML = failed(e); }
+}
+
+async function paperOrder(ev) {
+  ev.preventDefault();
+  const f = ev.target, side = ev.submitter.value;
+  const r = await post(`/api/paper/${side}`, { symbol: f.symbol.value.toUpperCase(), lots: +f.lots.value });
+  await renderTool();
+  $('#paper-msg').textContent = stripEmoji(r.message || (r.success ? 'Berhasil' : 'Gagal'));
+}
+async function paperReset() {
+  await post('/api/paper/reset', {});
+  renderTool();
+}
+async function addAlert(ev) {
+  ev.preventDefault();
+  const f = ev.target;
+  await post('/api/alerts', { symbol: f.symbol.value.toUpperCase(), target_price: +f.price.value });
+  renderTool();
+}
+async function delAlert(id) {
+  await api(`/api/alerts/${id}`, { method: 'DELETE' });
+  renderTool();
+}
+
+// ------------------------------------------------------------------ init
+loadStatus(); setInterval(loadStatus, 30000);
+route();
+</script>
+</body>
+</html>
