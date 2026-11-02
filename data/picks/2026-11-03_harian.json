@@ -1,10 +1,10 @@
 {
  "kind": "harian",
- "generated_at": "2026-11-03 02:38",
+ "generated_at": "2026-11-03 03:20",
  "data_date": "2026-10-30",
  "valid_for": "2026-11-03",
  "sell_on": "2026-11-03",
- "scanned": 132,
+ "scanned": 131,
  "harian": [
   {
    "symbol": "PTBA",
