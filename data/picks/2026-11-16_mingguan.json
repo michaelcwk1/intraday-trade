@@ -1,0 +1,38 @@
+{
+ "kind": "mingguan",
+ "generated_at": "2026-11-14 00:17",
+ "data_date": "2026-11-12",
+ "valid_for": "2026-11-16",
+ "sell_on": "2026-11-20",
+ "scanned": 132,
+ "mingguan": [
+  {
+   "symbol": "INTP",
+   "kind": "mingguan",
+   "score": 68.5,
+   "grade": "B",
+   "close": 5825.0,
+   "change_pct": 4.02,
+   "entry_low": 5700,
+   "entry_high": 5825,
+   "sl": 5525,
+   "sl_pct": -5.2,
+   "tp1": 6125,
+   "tp1_pct": 5.2,
+   "tp2": 6425,
+   "tp2_pct": 10.3,
+   "rvol": 0.41,
+   "atr_pct": 3.9,
+   "turnover_avg": 11704710750,
+   "reasons": [
+    "Tren naik: harga > MA20 > MA50, MA20 menanjak",
+    "Uang masuk lebih besar dari uang keluar (CMF positif)"
+   ],
+   "lots": 1,
+   "affordable": true,
+   "cost": 583374,
+   "risk_rp": 32330,
+   "risk_over_budget": true
+  }
+ ]
+}
