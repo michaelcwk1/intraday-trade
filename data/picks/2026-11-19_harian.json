@@ -1,10 +1,10 @@
 {
  "kind": "harian",
- "generated_at": "2026-11-19 01:50",
+ "generated_at": "2026-11-19 02:20",
  "data_date": "2026-11-17",
  "valid_for": "2026-11-19",
  "sell_on": "2026-11-19",
- "scanned": 132,
+ "scanned": 131,
  "harian": [
   {
    "symbol": "BBTN",
