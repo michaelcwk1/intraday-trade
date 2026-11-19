@@ -1,0 +1,39 @@
+{
+ "kind": "harian",
+ "generated_at": "2026-11-20 01:26",
+ "data_date": "2026-11-18",
+ "valid_for": "2026-11-20",
+ "sell_on": "2026-11-20",
+ "scanned": 132,
+ "harian": [
+  {
+   "symbol": "EXCL",
+   "kind": "harian",
+   "score": 81.0,
+   "grade": "A",
+   "close": 1715.0,
+   "change_pct": 11.0,
+   "entry_low": 1685,
+   "entry_high": 1725,
+   "sl": 1670,
+   "sl_pct": -3.2,
+   "tp1": 1780,
+   "tp1_pct": 3.2,
+   "tp2": 1835,
+   "tp2_pct": 6.4,
+   "rvol": 4.3,
+   "atr_pct": 6.0,
+   "turnover_avg": 34762099475,
+   "reasons": [
+    "Volume 4.3x rata-rata 20 hari",
+    "Ditutup dekat harga tertinggi hari ini",
+    "Uang masuk lebih besar dari uang keluar (CMF positif)"
+   ],
+   "lots": 4,
+   "affordable": true,
+   "cost": 691035,
+   "risk_rp": 24760,
+   "risk_over_budget": false
+  }
+ ]
+}
