@@ -1,10 +1,10 @@
 {
  "kind": "harian",
- "generated_at": "2026-11-25 03:37",
+ "generated_at": "2026-11-25 04:04",
  "data_date": "2026-11-23",
  "valid_for": "2026-11-25",
  "sell_on": "2026-11-25",
- "scanned": 132,
+ "scanned": 131,
  "harian": [
   {
    "symbol": "TPIA",
