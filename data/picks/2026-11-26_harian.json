@@ -1,10 +1,10 @@
 {
  "kind": "harian",
- "generated_at": "2026-11-26 02:29",
+ "generated_at": "2026-11-26 02:54",
  "data_date": "2026-11-24",
  "valid_for": "2026-11-26",
  "sell_on": "2026-11-26",
- "scanned": 131,
+ "scanned": 132,
  "harian": [
   {
    "symbol": "INDF",
